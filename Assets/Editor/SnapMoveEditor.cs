@@ -12,8 +12,10 @@ public class SnapMoveEditor : Editor
     //Debug.Log("");
 
     private SnapMove[] instances;
+    //オブジェクトのどこを中心とするか
     private Vector3 Center = Vector3.zero;
-    private readonly int GridSize = 16;
+    //オブジェクトを動かす時のデッドゾーン
+    private readonly int GridSize = 1;
     private void OnEnable()
     {
         instances = targets.Cast<SnapMove>().ToArray();
@@ -21,16 +23,20 @@ public class SnapMoveEditor : Editor
 
 
     /// <summary>
-    /// �V�[���r���[��GUI
+    /// OnSceneGUI
     /// </summary>
     [System.Obsolete]
     private void OnSceneGUI()
     {
+
         Tools.current = Tool.None;
 
         Center = GetCenterOfInstances(instances);
 
+        //円形ハンドルの描画
         FreeHandle();
+
+        //ハンドルの描画
         AxisHandle(Color.red, Vector2Int.right);
         AxisHandle(Color.green, Vector2Int.up);
         AxisHandle(Color.cyan, Vector2Int.left);
@@ -40,6 +46,7 @@ public class SnapMoveEditor : Editor
     [System.Obsolete]
     private void FreeHandle()
     {
+        //円形の描画
         Handles.color = Color.magenta;
 
         EditorGUI.BeginChangeCheck();
