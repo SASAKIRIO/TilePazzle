@@ -13,9 +13,7 @@ public class SnapMoveEditor : Editor
 
     private SnapMove[] instances;
     private Vector3 Center = Vector3.zero;
-
     private readonly int GridSize = 16;
-
     private void OnEnable()
     {
         instances = targets.Cast<SnapMove>().ToArray();
@@ -23,23 +21,40 @@ public class SnapMoveEditor : Editor
 
 
     /// <summary>
-    /// ƒV[ƒ“ƒrƒ…[‚ÌGUI
+    /// ï¿½Vï¿½[ï¿½ï¿½ï¿½rï¿½ï¿½ï¿½[ï¿½ï¿½GUI
     /// </summary>
+    [System.Obsolete]
     private void OnSceneGUI()
     {
-        //ƒV[ƒ“ƒrƒ…[‚Å‚Ìƒc[ƒ‹‚ğ–¢‘I‘ğ‚É‚·‚é
         Tools.current = Tool.None;
 
         Center = GetCenterOfInstances(instances);
-        EditorGUI.BeginChangeCheck();
 
-       
+        FreeHandle();
+        AxisHandle(Color.red, Vector2Int.right);
+        AxisHandle(Color.green, Vector2Int.up);
+        AxisHandle(Color.cyan, Vector2Int.left);
+        AxisHandle(Color.yellow, Vector2Int.down);
     }
 
+    [System.Obsolete]
+    private void FreeHandle()
+    {
+        Handles.color = Color.magenta;
 
+        EditorGUI.BeginChangeCheck();
+        var pos = Handles.FreeMoveHandle(Center, Quaternion.identity, 1f, Vector3.one,
+            Handles.CircleHandleCap);
+
+        
+        if (EditorGUI.EndChangeCheck())
+        {
+            MoveObject(pos - Center);
+        }
+    }
 
     /// <summary>
-    /// •¡”‚ÌƒCƒ“ƒXƒ^ƒ“ƒX‚Ì’†S‚ğ•Ô‚·
+    /// ï¿½ï¿½ï¿½ï¿½ï¿½ÌƒCï¿½ï¿½ï¿½Xï¿½^ï¿½ï¿½ï¿½Xï¿½Ì’ï¿½ï¿½Sï¿½ï¿½Ô‚ï¿½
     /// </summary>
     /// <param name="instances"></param>
     /// <returns></returns>
@@ -71,7 +86,23 @@ public class SnapMoveEditor : Editor
             var dot = Vector2.Dot(deltaMovement, direction);
             if (!(Mathf.Abs(dot) > Mathf.Epsilon)) return;
 
-            
+            MoveObject(dot * direction);
+        }
+    }
+
+
+
+    private void MoveObject(Vector3 vec3)
+    {
+        var vec2 = new Vector2Int(Mathf.RoundToInt(vec3.x/GridSize),Mathf.RoundToInt(vec3.y / GridSize));
+
+        if (vec2 == Vector2.zero) return;
+
+        foreach(var ins in instances)
+        {
+            Object[] objects = { ins, ins.transform };
+            Undo.RecordObjects(objects, "ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã®ç§»å‹•");
+            ins.Move(vec2);
         }
     }
 }
