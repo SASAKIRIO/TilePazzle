@@ -180,32 +180,61 @@ public class Player : MonoBehaviour
     /// <param name="tileType">移動先のタイルの種類</param>
     private void TileLogic(int tileType)
     {
-        //もし赤いタイル、何もタイルが無い時
-        if (tileType == (int)Tile.Tile_Type.Red ||
-            tileType == (int)Tile.Tile_Type.None)
-        {
-            // 進行許可しない
-            _isSafeTile = false;
-            return;
-        }
-        //もし紫かオレンジのタイルの場合
-        else if (tileType == (int)Tile.Tile_Type.Orange ||
-                 tileType == (int)Tile.Tile_Type.Purple)
-        {
-            SmellTile(tileType);
-        }
-        //もし黄色のタイルの場合
-        else if (tileType == (int)Tile.Tile_Type.Yellow)
-        {
-            // 一回行って帰って来る。
-            StartCoroutine(NowPos_To_NextPos(_NowPos, _NextPos, true));
+        //// もし赤いタイル、何もタイルが無い時
+        //if (tileType == (int)Tile.Tile_Type.Red ||
+        //    tileType == (int)Tile.Tile_Type.None)
+        //{
+        //    // 進行許可しない
+        //    _isSafeTile = false;
+        //    return;
+        //}
+        //// もし紫かオレンジのタイルの場合
+        //else if (tileType == (int)Tile.Tile_Type.Orange ||
+        //         tileType == (int)Tile.Tile_Type.Purple)
+        //{
+        //    SmellTile(tileType);
 
-            // 進行許可しない
-            _isSafeTile = false;
-            return;
+        //}
+        //// もし黄色のタイルの場合
+        //else if (tileType == (int)Tile.Tile_Type.Yellow)
+        //{
+        //    // 一回行って帰って来る。
+        //    StartCoroutine(NowPos_To_NextPos(_NowPos, _NextPos, true));
+
+        //    // 進行許可しない
+        //    _isSafeTile = false;
+        //    return;
+        //}
+
+        switch (tileType)
+        {
+            case (int)Tile.Tile_Type.None:
+                // 進行許可しない
+                _isSafeTile = false;
+                return;
+            case (int)Tile.Tile_Type.Red:
+                // 進行許可しない
+                _isSafeTile = false;
+                return;
+            case (int)Tile.Tile_Type.Orange:
+                SmellTile(tileType);
+                break;
+            case (int)Tile.Tile_Type.Purple:
+                SmellTile(tileType);
+                break;
+            case (int)Tile.Tile_Type.Yellow:
+                // 一回行って帰って来る。
+                StartCoroutine(NowPos_To_NextPos(_NowPos, _NextPos, true));
+
+                // 進行許可しない
+                _isSafeTile = false;
+                return;
+            case (int)Tile.Tile_Type.Blue:
+                break;
+
         }
 
-        //それ以外の場合進行許可する
+        // それ以外の場合進行許可する
         _isSafeTile = true;
     }
 
