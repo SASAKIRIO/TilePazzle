@@ -12,6 +12,8 @@ public class MapArrayEditor : MonoBehaviour
 
     private void Start()
     {
+        Tiles = GameObject.FindGameObjectsWithTag("Tile");
+
         for(int i = 0; i < Tiles.Length; i++)
         {
             int x = 0;
