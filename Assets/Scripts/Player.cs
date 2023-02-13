@@ -7,10 +7,20 @@ public class Player : MonoBehaviour
     // 変数部ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
 
     // マップ配列を格納する為のスクリプトを取得 
-    [SerializeField] private MapArrayEditor _mapArrayEditor;
+    [SerializeField] 
+    private MapArray _mapArray = default;
+
+    [Header("スタート地点")]
+    [SerializeField]
+    private GameObject _startPos = default;
+
+    [Header("ゴール地点")]
+    [SerializeField]
+    private GameObject _goalPos = default;
 
     [Header("何秒でタイル移動するか")]
-    [SerializeField] private float _MoveSpeed;
+    [SerializeField] 
+    private float _MoveSpeed = default;
 
     // 香りのenum情報
     private enum Smell_type
@@ -21,7 +31,8 @@ public class Player : MonoBehaviour
     }
 
     [Header("香り")]
-    [SerializeField] private Smell_type _smellType = Smell_type.None;
+    [SerializeField] 
+    private Smell_type _smellType = Smell_type.None;
 
     // マップを格納する為の二次元配列を格納
     private int[,] _Map = default;
@@ -57,7 +68,10 @@ public class Player : MonoBehaviour
     private void Start()
     {
         // マップを格納
-        _Map = _mapArrayEditor.Map;
+        _Map = _mapArray.Map;
+
+        // スタート位置に
+        transform.position = _startPos.transform.position;
     }
 
 
@@ -76,6 +90,9 @@ public class Player : MonoBehaviour
 
         // 移動中の時は入力を受け付けずreturnで返す
         if (_isMoving) return;
+
+        // 入力されていない時に
+        if (!(UpArrow || DownArrow || LeftArrow || RightArrow)) return;
 
         // Moveコルーチンで移動する。
         // _Directionに進行方向を格納する。
@@ -130,8 +147,6 @@ public class Player : MonoBehaviour
 
         // 移動中状態を切る
         _isCoroutineFlag[0] = false;
-
-        Debug.Log("移動完了");
 
     }
 
@@ -203,7 +218,7 @@ public class Player : MonoBehaviour
             yield return NowPos_To_NextPos(NextPos, NowPos);
         }
 
-
+        GoalCheck(NextPos);
         // コルーチンの終了を宣言
         _isCoroutineFlag[1] = false;
     }
@@ -325,7 +340,7 @@ public class Player : MonoBehaviour
         // それ以外の時
         else
         {
-            Debug.Log("香りのつくタイルではないです");
+            
         }
     }
 
@@ -423,6 +438,29 @@ public class Player : MonoBehaviour
 
         // 前後左右に無い場合falseを返す
         return false;
+    }
+
+
+
+    /// <summary>
+    /// クリアチェック
+    /// </summary>
+    /// <param name="NextPos"></param>
+    private void GoalCheck(Vector3 NextPos)
+    {
+        try
+        {
+            // タイルの種類を取得する
+            int x = (int)NextPos.x;
+            int y = (int)NextPos.y;
+            int tileType = _Map[x, y];
+
+            if (tileType == (int)Tile.Tile_Type.Goal)
+            {
+                Debug.Log("くりあーーー");
+            }
+        }
+        catch { }
     }
     // ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
 }

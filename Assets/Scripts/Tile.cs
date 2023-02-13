@@ -41,6 +41,14 @@ public class Tile : MonoBehaviour
         /// 通行禁止
         /// </summary>
         Red,
+        /// <summary>
+        /// 開始地点
+        /// </summary>
+        Start,
+        /// <summary>
+        /// ゴール地点
+        /// </summary>
+        Goal,
     }
 
     public enum Tile_Feature
