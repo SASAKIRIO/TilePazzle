@@ -43,6 +43,14 @@ public class Tile : MonoBehaviour
         Red,
     }
 
+    public enum Tile_Feature
+    {
+        None,
+        Bounce,
+        Slip,
+    }
+
+
     [Header("ƒ^ƒCƒ‹‚ÌŽí—Þ")]
     [SerializeField] public Tile_Type _tileType = default;
 

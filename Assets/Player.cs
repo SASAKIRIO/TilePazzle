@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 //using UnityEngine.;
 
@@ -11,7 +10,7 @@ public class Player : MonoBehaviour
     [SerializeField] private MapArrayEditor _mapArrayEditor;
 
     [Header("何秒でタイル移動するか")]
-    [SerializeField] private float _MoveSpeedTime;
+    [SerializeField] private float _MoveSpeed;
 
     // 香りのenum情報
     private enum Smell_type
@@ -27,20 +26,30 @@ public class Player : MonoBehaviour
     // マップを格納する為の二次元配列を格納
     private int[,] _Map = default;
 
-    // 移動中かどうかを判断するbool型変数, trueでプレイヤーがLerp移動中、falseでプレイヤーが移動完了
-    //private bool _isMoving = false;
-
-    // タイルが移動可能かを判断するbool型変数
-    private bool _isSafeTile = true;
-
+    [Header("確認用")]
     // 現在地の格納場所
     private Vector3 _NowPos = default;
 
     // 移動先の格納場所
     private Vector3 _NextPos = default;
 
+    // 移動先の格納場所の延長１マス
+    private Vector3 _AfterNextPos = default;
+
+    // 移動先の格納場所の延長１マス
+    private Vector3 _PurpleNextPos = default;
+
     // コルーチンが稼働中かどうかを取るbool型変数
     private bool[] _isCoroutineFlag = new bool[2];
+
+    // 進行方向
+    private Vector3 _Direction = Vector3.zero;
+
+    // 連続している紫の数
+    private int PurpleLength = 1;
+
+    // 滑り先が黄色だった時にあげるフラグ
+    private bool _SlipYellow = false;
 
     // ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
     // 関数部ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
@@ -55,11 +64,12 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
+
         // bool型変数に入力変数を格納　ここをいじれば入力処理の変更が可能
-        bool UpArrow    = Input.GetKey(KeyCode.UpArrow);
-        bool DownArrow  = Input.GetKey(KeyCode.DownArrow);
-        bool LeftArrow  = Input.GetKey(KeyCode.LeftArrow);
-        bool RightArrow = Input.GetKey(KeyCode.RightArrow);
+        bool UpArrow    = Input.GetKeyDown(KeyCode.UpArrow);
+        bool DownArrow  = Input.GetKeyDown(KeyCode.DownArrow);
+        bool LeftArrow  = Input.GetKeyDown(KeyCode.LeftArrow);
+        bool RightArrow = Input.GetKeyDown(KeyCode.RightArrow);
 
         // 何かしらのコルーチンが稼働しているか
         bool _isMoving = _isCoroutineFlag[0] || _isCoroutineFlag[1];
@@ -68,10 +78,27 @@ public class Player : MonoBehaviour
         if (_isMoving) return;
 
         // Moveコルーチンで移動する。
-        if      (RightArrow) StartCoroutine(Move(Vector3.right));
-        else if (LeftArrow)  StartCoroutine(Move(Vector3.left));
-        else if (UpArrow)    StartCoroutine(Move(Vector3.up));
-        else if (DownArrow)  StartCoroutine(Move(Vector3.down));
+        // _Directionに進行方向を格納する。
+        if (RightArrow)
+        {
+            _Direction = Vector3.right;
+            Move(_Direction);
+        }
+        else if (LeftArrow)
+        {
+            _Direction = Vector3.left;
+            Move(_Direction);
+        }
+        else if (UpArrow)
+        {
+            _Direction = Vector3.up;
+            Move(_Direction);
+        }
+        else if (DownArrow)
+        {
+            _Direction = Vector3.down;
+            Move(_Direction);
+        }
 
     }
 
@@ -82,7 +109,7 @@ public class Player : MonoBehaviour
     /// </summary>
     /// <param name="Direction"></param>
     /// <returns></returns>
-    private IEnumerator Move(Vector3 Direction)
+    private void Move(Vector3 Direction)
     {
         // 移動中状態にする
         _isCoroutineFlag[0] = true;
@@ -90,22 +117,22 @@ public class Player : MonoBehaviour
         // 今の位置と移動しようとしている位置を格納
         _NowPos = transform.position;
         _NextPos = _NowPos + Direction;
+        _AfterNextPos = _NextPos + Direction;
 
-        // 移動先が移動可能か
+        // 紫の個数を格納
+        GetPurpleLength(_NowPos, Direction);
+
+        // 紫のスライド移動先
+        _PurpleNextPos = _NowPos + Direction * (PurpleLength);
+
+        // 移動先が移動可能かを判定し、可能であれば移動する。
         CanMove(_NextPos);
-
-        // 移動できない状態の場合breakする
-        if (!_isSafeTile)
-        {
-            _isCoroutineFlag[0] = false;
-            yield break;
-        }
-
-        // Lerpで移動
-        yield return NowPos_To_NextPos(_NowPos, _NextPos);
 
         // 移動中状態を切る
         _isCoroutineFlag[0] = false;
+
+        Debug.Log("移動完了");
+
     }
 
 
@@ -115,29 +142,67 @@ public class Player : MonoBehaviour
     /// </summary>
     /// <param name="NowPos">開始のポジション</param>
     /// <param name="NextPos">終了のポジション</param>
-    /// <param name="_isBackTile">行って戻るか否かのbool型変数</param>
+    /// <param name="tileFeature">特殊なタイルの場合を取るTileFeature型変数</param>
     /// <returns></returns>
-    private IEnumerator NowPos_To_NextPos(Vector3 NowPos, Vector3 NextPos, bool _isBackTile = false)
+    private IEnumerator NowPos_To_NextPos(Vector3 NowPos, Vector3 NextPos, Tile.Tile_Feature tileFeature = Tile.Tile_Feature.None)
     {
         // コルーチンの稼働を宣言
         _isCoroutineFlag[1] = true;
 
-        // Lerpで移動
-        for (float i = 0; i <= 1; i += 0.01f)
+        // 紫のスリップ移動以外なら
+        if (tileFeature != Tile.Tile_Feature.Slip)
         {
-            // ポジションをLerpで移動
-            transform.position = Vector3.Lerp(NowPos, NextPos, i);
-            yield return new WaitForSeconds(Time.deltaTime * _MoveSpeedTime);
+            // Lerpで移動
+            for (float i = 0; i <= 1; i += _MoveSpeed / PurpleLength)
+            {
+                // ポジションをLerpで移動
+                transform.position = Vector3.Lerp(NowPos, NextPos, i);
+                yield return null;
+            }
         }
+        // 紫のスリップ移動なら
+        else
+        {
+            // 紫タイルの最終移動先を移動先に設定
+            NextPos = _PurpleNextPos;
+
+            // Lerpで移動
+            for (float i = 0; i <= 1; i += _MoveSpeed / PurpleLength)
+            {
+                // ポジションをLerpで移動
+                transform.position = Vector3.Lerp(NowPos, NextPos, i);
+                yield return null;
+            }
+
+            // 移動先のタイルの香りをつける
+            try
+            {
+                int x = (int)NextPos.x;
+                int y = (int)NextPos.y;
+                int tileType = _Map[x, y];
+
+                SmellTile(tileType);
+            }
+            catch　{}
+        }
+
 
         // 位置ずれ防止の為に修正
         transform.position = NextPos;
 
         // 戻るタイルの場合、再帰的に関数を呼び、場所を戻す
-        if (_isBackTile)
+        if (tileFeature == Tile.Tile_Feature.Bounce || _SlipYellow)
         {
+            // 方向を反転させる。
+            _Direction *= -1;
+
+            // 滑った先が黄色だったかというフラグを下げる
+            _SlipYellow = false;
+
+            // もどる。
             yield return NowPos_To_NextPos(NextPos, NowPos);
         }
+
 
         // コルーチンの終了を宣言
         _isCoroutineFlag[1] = false;
@@ -167,8 +232,7 @@ public class Player : MonoBehaviour
         // 配列外の場合
         catch
         {
-            // 進行許可しない
-            _isSafeTile = false;
+
         }
     }
 
@@ -180,62 +244,62 @@ public class Player : MonoBehaviour
     /// <param name="tileType">移動先のタイルの種類</param>
     private void TileLogic(int tileType)
     {
-        //// もし赤いタイル、何もタイルが無い時
-        //if (tileType == (int)Tile.Tile_Type.Red ||
-        //    tileType == (int)Tile.Tile_Type.None)
-        //{
-        //    // 進行許可しない
-        //    _isSafeTile = false;
-        //    return;
-        //}
-        //// もし紫かオレンジのタイルの場合
-        //else if (tileType == (int)Tile.Tile_Type.Orange ||
-        //         tileType == (int)Tile.Tile_Type.Purple)
-        //{
-        //    SmellTile(tileType);
-
-        //}
-        //// もし黄色のタイルの場合
-        //else if (tileType == (int)Tile.Tile_Type.Yellow)
-        //{
-        //    // 一回行って帰って来る。
-        //    StartCoroutine(NowPos_To_NextPos(_NowPos, _NextPos, true));
-
-        //    // 進行許可しない
-        //    _isSafeTile = false;
-        //    return;
-        //}
-
         switch (tileType)
         {
-            case (int)Tile.Tile_Type.None:
+            case (int)Tile.Tile_Type.None:// 完成
                 // 進行許可しない
-                _isSafeTile = false;
                 return;
-            case (int)Tile.Tile_Type.Red:
-                // 進行許可しない
-                _isSafeTile = false;
-                return;
-            case (int)Tile.Tile_Type.Orange:
-                SmellTile(tileType);
-                break;
-            case (int)Tile.Tile_Type.Purple:
-                SmellTile(tileType);
-                break;
-            case (int)Tile.Tile_Type.Yellow:
-                // 一回行って帰って来る。
-                StartCoroutine(NowPos_To_NextPos(_NowPos, _NextPos, true));
 
+            case (int)Tile.Tile_Type.Red:// 完成
                 // 進行許可しない
-                _isSafeTile = false;
                 return;
-            case (int)Tile.Tile_Type.Blue:
+
+            case (int)Tile.Tile_Type.Orange:// 完成
+                SmellTile(tileType);
+                break;
+
+            case (int)Tile.Tile_Type.Purple:// 完成
+
+                SmellTile(tileType);
+
+                // 滑る
+                StartCoroutine(NowPos_To_NextPos(_NowPos, _AfterNextPos, Tile.Tile_Feature.Slip));
+
+                return;
+
+            case (int)Tile.Tile_Type.Yellow:// 完成
+
+                // 一回行って帰って来る
+                StartCoroutine(NowPos_To_NextPos(_NowPos, _NextPos, Tile.Tile_Feature.Bounce));
+
+                return;
+
+            case (int)Tile.Tile_Type.Blue:// 完成
+
+                // 周囲に黄色がある時
+                if (GetNearYellowTile(_NextPos))
+                {
+                    // 感電により、一回行って帰って来る
+                    StartCoroutine(NowPos_To_NextPos(_NowPos, _NextPos, Tile.Tile_Feature.Bounce));
+                }
+
+                // オレンジの香りがついている時
+                if (_smellType == Smell_type.Orange)
+                {
+                    // 一回行って帰って来る。
+                    StartCoroutine(NowPos_To_NextPos(_NowPos, _NextPos, Tile.Tile_Feature.Bounce));
+
+                    return;
+                }
+
+                // レモンの香りか香りがついていない時には普通に通過できる
+
                 break;
 
         }
 
-        // それ以外の場合進行許可する
-        _isSafeTile = true;
+        // Lerpで移動
+        StartCoroutine(NowPos_To_NextPos(_NowPos, _NextPos));
     }
 
 
@@ -265,5 +329,100 @@ public class Player : MonoBehaviour
         }
     }
 
+
+
+    /// <summary>
+    /// 紫がどれだけ連続して続いてるかをとるメソッド
+    /// </summary>
+    /// <param name="NowPos">現在地</param>
+    /// <param name="Direction">進む方向</param>
+    private void GetPurpleLength(Vector3 NowPos,Vector3 Direction)
+    {
+        try
+        {
+            // タイルの種類を取得する
+            int x = (int)NowPos.x;
+            int y = (int)NowPos.y;
+            int tileType = _Map[x, y];
+
+            // 香りを付ける
+            SmellTile(tileType);
+
+
+            // 紫の連続数をリセット
+            PurpleLength = 1;
+
+            while (true)
+            {
+                // 方向によって探索方向を変える。
+                if      (Direction == Vector3.up)    y++;
+                else if (Direction == Vector3.down)  y--;
+                else if (Direction == Vector3.left)  x--;
+                else if (Direction == Vector3.right) x++;
+
+                // 探索先のタイルを配列から探す
+                tileType = _Map[x, y];
+
+                // タイルが無くなった時紫の連続数を調整。
+                if (tileType == (int)Tile.Tile_Type.None)
+                {
+                    // 直前にする為に減算
+                    PurpleLength--;
+                    break;
+                }
+
+                // 紫から続いている黄色であるか
+                if (tileType == (int)Tile.Tile_Type.Yellow && PurpleLength >= 2)
+                {
+                    // 滑り先が黄色であることを知らせるフラグをtrueに
+                    _SlipYellow = true;
+                    break;
+                }
+
+                // それが紫じゃない時にループをブレイクする
+                if (tileType != (int)Tile.Tile_Type.Purple) break;
+
+                // 加算
+                PurpleLength++;
+            }
+        }
+        catch
+        {
+            // 紫の連続数を調整
+            PurpleLength --;
+        }
+    }
+
+
+
+    /// <summary>
+    /// 周囲に黄色パネルがあるかを返すboolメソッド
+    /// </summary>
+    /// <param name="NextPos"></param>
+    /// <returns></returns>
+    private bool GetNearYellowTile(Vector3 NextPos)
+    {
+        int x = (int)NextPos.x;
+        int y = (int)NextPos.y;
+
+        // 選んだポジションの上に黄色がある場合trueを返す
+        try { if (_Map[x + 1, y] == (int)Tile.Tile_Type.Yellow) return true; }
+        catch { }
+
+        // 選んだポジションの下に黄色がある場合trueを返す
+        try { if (_Map[x - 1, y] == (int)Tile.Tile_Type.Yellow) return true; }
+        catch { }
+
+        // 選んだポジションの右に黄色がある場合trueを返す
+        try { if (_Map[x, y + 1] == (int)Tile.Tile_Type.Yellow) return true; }
+        catch { }
+
+        // 選んだポジションの左に黄色がある場合trueを返す
+        try { if (_Map[x, y - 1] == (int)Tile.Tile_Type.Yellow) return true; }
+        catch { }
+
+        // 前後左右に無い場合falseを返す
+        return false;
+    }
     // ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
 }

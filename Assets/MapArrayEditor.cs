@@ -24,9 +24,5 @@ public class MapArrayEditor : MonoBehaviour
             int _tileType = (int)Tiles[i].GetComponent<Tile>()._tileType;
             Map[x, y] = _tileType;
         }
-
-        Debug.Log(Map[1, 2]);
-        Debug.Log(Map[1, 1]);
-        Debug.Log(Map[2, 1]);
     }
 }
