@@ -31,3 +31,5 @@ MonoBehaviour:
     gameObject: {fileID: 7189099938887775798, guid: 8ee79c12a466e2b43b740a526c09fd76, type: 3}
   - icon: {fileID: 21300000, guid: fabac93e3b8551e4d82524024f9b4f1c, type: 3}
     gameObject: {fileID: 3558738981161232318, guid: 57629372c943c6246b7ff6fe8fbbb733, type: 3}
+  - icon: {fileID: 21300000, guid: 9aa4348290784b2468144a97eb15d8d7, type: 3}
+    gameObject: {fileID: 0}

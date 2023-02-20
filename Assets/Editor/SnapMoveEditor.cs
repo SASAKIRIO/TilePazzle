@@ -1,6 +1,6 @@
+// ビルドエラー対策用スニペット
+#if UNITY_EDITOR
 using System.Linq;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 //using UnityEngine.;
@@ -28,20 +28,23 @@ public class SnapMoveEditor : Editor
     [System.Obsolete]
     private void OnSceneGUI()
     {
-
+        // 基本ツールの使用を規制する。
         Tools.current = Tool.None;
 
+        // 
         Center = GetCenterOfInstances(instances);
 
         //円形ハンドルの描画
         FreeHandle();
 
         //ハンドルの描画
-        AxisHandle(Color.red, Vector2Int.right);
-        AxisHandle(Color.green, Vector2Int.up);
-        AxisHandle(Color.cyan, Vector2Int.left);
-        AxisHandle(Color.yellow, Vector2Int.down);
+        //AxisHandle(Color.red, Vector2Int.right);
+        //AxisHandle(Color.green, Vector2Int.up);
+        //AxisHandle(Color.cyan, Vector2Int.left);
+        //AxisHandle(Color.yellow, Vector2Int.down);
     }
+
+
 
     [System.Obsolete]
     private void FreeHandle()
@@ -50,7 +53,7 @@ public class SnapMoveEditor : Editor
         Handles.color = Color.magenta;
 
         EditorGUI.BeginChangeCheck();
-        var pos = Handles.FreeMoveHandle(Center, Quaternion.identity, 1f, Vector3.one,
+        var pos = Handles.FreeMoveHandle(Center, Quaternion.identity, 0.5f, Vector3.one,
             Handles.CircleHandleCap);
 
         
@@ -113,3 +116,4 @@ public class SnapMoveEditor : Editor
         }
     }
 }
+#endif

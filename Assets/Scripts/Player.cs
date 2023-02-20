@@ -7,19 +7,15 @@ public class Player : MonoBehaviour
     // 変数部ーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーーー
 
     // マップ配列を格納する為のスクリプトを取得 
-    [SerializeField] 
+    [SerializeField]
     private MapArray _mapArray = default;
 
     [Header("スタート地点")]
     [SerializeField]
     private GameObject _startPos = default;
 
-    [Header("ゴール地点")]
-    [SerializeField]
-    private GameObject _goalPos = default;
-
     [Header("何秒でタイル移動するか")]
-    [SerializeField] 
+    [SerializeField]
     private float _MoveSpeed = default;
 
     // 香りのenum情報
@@ -228,7 +224,7 @@ public class Player : MonoBehaviour
     /// <summary>
     /// 動けるタイルか確認
     /// </summary>
-    /// <param name="PlanPos"></param>
+    /// <param name="PlanPos">行先</param>
     private void CanMove(Vector3 PlanPos)
     {
         // PlanPosのxとyを格納
@@ -246,9 +242,7 @@ public class Player : MonoBehaviour
         }
         // 配列外の場合
         catch
-        {
-
-        }
+        {}
     }
 
 
@@ -291,15 +285,9 @@ public class Player : MonoBehaviour
 
             case (int)Tile.Tile_Type.Blue:// 完成
 
-                // 周囲に黄色がある時
-                if (GetNearYellowTile(_NextPos))
-                {
-                    // 感電により、一回行って帰って来る
-                    StartCoroutine(NowPos_To_NextPos(_NowPos, _NextPos, Tile.Tile_Feature.Bounce));
-                }
-
-                // オレンジの香りがついている時
-                if (_smellType == Smell_type.Orange)
+                // 周囲に黄色タイルがあるか、オレンジの香りがついていたら、一回行って帰って来る。
+                if(GetNearYellowTile(_NextPos) ||
+                   _smellType == Smell_type.Orange)
                 {
                     // 一回行って帰って来る。
                     StartCoroutine(NowPos_To_NextPos(_NowPos, _NextPos, Tile.Tile_Feature.Bounce));
@@ -455,6 +443,7 @@ public class Player : MonoBehaviour
             int y = (int)NextPos.y;
             int tileType = _Map[x, y];
 
+            // ゴールタイルの場合、ゴール処理を行う
             if (tileType == (int)Tile.Tile_Type.Goal)
             {
                 Debug.Log("くりあーーー");
