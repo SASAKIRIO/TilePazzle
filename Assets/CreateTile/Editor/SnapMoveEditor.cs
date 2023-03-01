@@ -16,6 +16,9 @@ public class SnapMoveEditor : Editor
     private Vector3 Center = Vector3.zero;
     //オブジェクトを動かす時のデッドゾーン
     private readonly int GridSize = 1;
+
+    private float FreeHandleRadius = 0.5f;
+
     private void OnEnable()
     {
         instances = targets.Cast<SnapMove>().ToArray();
@@ -53,7 +56,7 @@ public class SnapMoveEditor : Editor
         Handles.color = Color.magenta;
 
         EditorGUI.BeginChangeCheck();
-        var pos = Handles.FreeMoveHandle(Center, Quaternion.identity, 0.5f, Vector3.one,
+        var pos = Handles.FreeMoveHandle(Center, Quaternion.identity, FreeHandleRadius, Vector3.one,
             Handles.CircleHandleCap);
 
         
@@ -72,15 +75,16 @@ public class SnapMoveEditor : Editor
     {
         float x = 0f, y = 0f;
 
-        foreach(SnapMove ins in instances)
+
+        foreach (SnapMove ins in instances)
         {
             Vector3 pos = ins.transform.position;
             x += pos.x;
             y += pos.y;
         }
         return new Vector3(x / instances.Length,
-                           y / instances.Length,
-                           0);
+                            y / instances.Length,
+                            0);
     }
 
 
