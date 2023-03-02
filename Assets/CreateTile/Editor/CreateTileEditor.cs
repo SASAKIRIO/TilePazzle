@@ -1,7 +1,7 @@
 // ビルドエラー対策用スニペット
-#if UNITY_EDITOR
+//#if UNITY_EDITOR
 using UnityEditor;
-#endif
+//#endif
 
 using UnityEngine;
 
@@ -10,7 +10,7 @@ using UnityEngine;
 public static class CreateTileEditor
 {
 
-#if UNITY_EDITOR
+//#if UNITY_EDITOR
     // タイルの色のenum変数
     public enum Status
     {
@@ -151,10 +151,8 @@ public static class CreateTileEditor
     /// </summary>
     private static void ShowButtons(Vector2 sceneSize)
     {
-        Debug.Log(sceneSize+":");
         // Tileの個数を格納　ScriptableObjectの要素数参照
         int loc_count = _tileDataTable.dataList.Count;
-
 
 
         for (var i = 0; i < loc_count; i++)
@@ -269,7 +267,7 @@ public static class CreateTileEditor
             }
         }
     }
-#endif
+//#endif
 }
 
 
@@ -296,6 +294,7 @@ public sealed class CreateTileEditorWindow : EditorWindow
     {
         Japanese,
         English,
+        Chinese,
     }
 
     Language language = Language.Japanese;

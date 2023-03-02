@@ -16,7 +16,7 @@ public class SnapMoveEditor : Editor
     private Vector3 Center = Vector3.zero;
     //オブジェクトを動かす時のデッドゾーン
     private readonly int GridSize = 1;
-
+    // フリーハンドルの半径
     private float FreeHandleRadius = 0.5f;
 
     private void OnEnable()
@@ -39,12 +39,6 @@ public class SnapMoveEditor : Editor
 
         //円形ハンドルの描画
         FreeHandle();
-
-        //ハンドルの描画
-        //AxisHandle(Color.red, Vector2Int.right);
-        //AxisHandle(Color.green, Vector2Int.up);
-        //AxisHandle(Color.cyan, Vector2Int.left);
-        //AxisHandle(Color.yellow, Vector2Int.down);
     }
 
 
@@ -88,35 +82,23 @@ public class SnapMoveEditor : Editor
     }
 
 
-
-    private void AxisHandle(Color color,Vector2 direction)
-    {
-        Handles.color = color;
-        EditorGUI.BeginChangeCheck();
-        var deltaMovement = Handles.Slider(Center, new Vector3(direction.x, direction.y, 0)) - Center;
-
-        if (EditorGUI.EndChangeCheck())
-        {
-            var dot = Vector2.Dot(deltaMovement, direction);
-            if (!(Mathf.Abs(dot) > Mathf.Epsilon)) return;
-
-            MoveObject(dot * direction);
-        }
-    }
-
-
-
+    /// <summary>
+    /// グリッドに合わせて動かす
+    /// </summary>
+    /// <param name="vec3"></param>
     private void MoveObject(Vector3 vec3)
     {
-        var vec2 = new Vector2Int(Mathf.RoundToInt(vec3.x/GridSize),Mathf.RoundToInt(vec3.y / GridSize));
+        // 移動量を丸める
+        Vector2Int RoundVector2 = new Vector2Int(Mathf.RoundToInt(vec3.x/GridSize),Mathf.RoundToInt(vec3.y / GridSize));
 
-        if (vec2 == Vector2.zero) return;
+        // 移動量が無い場合returnする
+        if (RoundVector2 == Vector2.zero) return;
 
         foreach(var ins in instances)
         {
             Object[] objects = { ins, ins.transform };
             Undo.RecordObjects(objects, "オブジェクトの移動");
-            ins.Move(vec2);
+            ins.Move(RoundVector2);
         }
     }
 }

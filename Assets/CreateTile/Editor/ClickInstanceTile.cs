@@ -1,33 +1,29 @@
 // ビルドエラー対策用スニペット
-#if UNITY_EDITOR
+//#if UNITY_EDITOR
 using UnityEditor;
-#endif
-
+//#endif
 using UnityEngine;
 
-//[ExecuteInEditMode]//ExecuteInEditModeを付ける事でEditor上でも実行されるようになる
+
 [InitializeOnLoad]
-public class ClickInstanceTile
+public static class ClickInstanceTile
 {
-#if UNITY_EDITOR
+//#if UNITY_EDITOR
 
-    /*
-     * 
-     * [問題点]
-     * 
-     * HeaderついてるパラメータをSerialize化
-     * 
-     */
+     /*
+      * 
+      * [問題点]
+      * 
+      * HeaderついてるパラメータをSerialize化
+      * 
+      */
 
 
-    [Header("使用しているモニターがRetinaモニターの場合trueにしてください"), SerializeField] 
+     [Header("使用しているモニターがRetinaモニターの場合trueにしてください"), SerializeField] 
     private static bool _Monitor_is_Retina = true;
 
     [Header("画面拡大率"), SerializeField]
-    private static float X = ClickInstanceTileWindow.Xparam;
-
-    [Header("画面拡大率"), SerializeField]
-    private static float Y = ClickInstanceTileWindow.Yparam;
+    public static float WindowZoomPercent = GetDpi();
 
 
     // 生成したタイルの親オブジェクト
@@ -41,13 +37,36 @@ public class ClickInstanceTile
     // 多重に置くことを防ぐ為にある。　前フレームのマウス位置を設定するVector3変数
     private static Vector3 BeforeMousePosition;
 
+
+
+
     static ClickInstanceTile()
     {
         // 生成したタイルをまとめる親オブジェクトを設定
         MapParent = GameObject.FindGameObjectWithTag("MapParent");
+
         //シーンビュー上のイベントを取得するため、メソッドを設定
         SceneView.duringSceneGui += EventOnSceneView;
     }
+
+
+
+    /// <summary>
+    /// DPIを取得するメソッド
+    /// </summary>
+    public static float GetDpi()
+    {
+        // dpi変数
+        float dpi;
+
+        dpi = Screen.dpi;
+
+        Debug.Log("拡大率は" + (dpi / 96) * 100 + "%です！");
+
+        return dpi / 96;
+
+    }
+
 
 
     /// <summary>
@@ -56,9 +75,6 @@ public class ClickInstanceTile
     /// <param name="scene">現在のシーン、自動保持</param>
     private static void EventOnSceneView(SceneView scene)
     {
-        // 左Ctrlを押しながらクリックでタイル生成。
-        //Event.current.type == EventType.MouseDown &&
-
 
         /*
          *
@@ -71,10 +87,10 @@ public class ClickInstanceTile
          * 
          */
 
-        // Debug.Log("キー:" + (Event.current.type == EventType.KeyDown) + "  MouseDown" + (Event.current.type == EventType.MouseDown));
 
-        // 値を更新
-        ParamUpdate();
+        // 拡大率を更新
+        WindowZoomPercent = GetDpi();
+
 
         // タイルモードの状態で、クリックするとタイルを生成。
         // 入力処理
@@ -86,17 +102,6 @@ public class ClickInstanceTile
 
         // ゴーストは表示する。
         OnGUIGhostTile();
-    }
-
-
-
-    /// <summary>
-    /// パラメータの更新
-    /// </summary>
-    private static void ParamUpdate()
-    {
-        X = ClickInstanceTileWindow.Xparam;
-        Y = ClickInstanceTileWindow.Yparam;
     }
 
 
@@ -183,14 +188,13 @@ public class ClickInstanceTile
         // イベントからマウスの位置取得
         Vector3 mousePosition = Event.current.mousePosition;
 
-        Debug.Log("EventでとったmousePosition："+mousePosition+"  ScreenSize："+Screen.width+":"+Screen.height);
 
 
         // 使用者のモニターがRetinaモニターの場合
         if (_Monitor_is_Retina)
         {
-            mousePosition.x *= X;
-            mousePosition.y = SceneView.currentDrawingSceneView.camera.pixelHeight - mousePosition.y * Y;
+            mousePosition.x *= WindowZoomPercent;
+            mousePosition.y = SceneView.currentDrawingSceneView.camera.pixelHeight - mousePosition.y * WindowZoomPercent;
         }
         // 使用者のモニターがRetinaモニターでない場合
         else
@@ -284,13 +288,13 @@ public class ClickInstanceTile
         Vector3 mousePosition = GetMousePosition();
 
         //Debug.Log(mousePosition +")"+Screen.width+":"+Screen.height);
-        Debug.Log(Screen.currentResolution.width + ":" + Screen.currentResolution.height);
-
     }
 
-#endif
-}
 
+
+    
+//#endif
+}
 
 
 
@@ -299,7 +303,7 @@ public class ClickInstanceTile
 /// </summary>
 public sealed class ClickInstanceTileWindow : EditorWindow
 {
-    [MenuItem("Window/Sasaki/ClickInstanceTileWindow")]
+    [UnityEditor.MenuItem("Window/Sasaki/ClickInstanceTileWindow")]
     private static void ShowParamWindow()
     {
         // Windowを表示
@@ -308,20 +312,23 @@ public sealed class ClickInstanceTileWindow : EditorWindow
 
 
     // ここが初期値になる
-    public static float Xparam { get; set; } = 1.25f;
-    public static float Yparam { get; set; } = 1.25f;
+    public float WindowZoomPercent { get; set; } = ClickInstanceTile.WindowZoomPercent;
 
     public static bool foldout = false;
 
+    
+
     private void OnGUI()
     {
-        EditorGUILayout.LabelField("解像度によって値を変えてください");
+        EditorGUILayout.LabelField("ウィンドウ設定");
+
+        WindowZoomPercent = EditorGUILayout.FloatField(WindowZoomPercent, "拡大率");
 
         EditorGUILayout.Space();
 
         // 値を表示
-        Xparam = EditorGUILayout.FloatField("X値", Xparam);
-        Yparam = EditorGUILayout.FloatField("Y値", Yparam);
+        //WindowZoomPercent = EditorGUILayout.FloatField("Windowsのウィンドウ拡大率", WindowZoomPercent);
+
 
         foldout = EditorGUILayout.Foldout(foldout, "ドロップアウト");
         if (foldout)
