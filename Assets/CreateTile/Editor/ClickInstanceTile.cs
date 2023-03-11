@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEngine;
 
 
+
 [InitializeOnLoad]
 public static class ClickInstanceTile
 {
@@ -18,13 +19,8 @@ public static class ClickInstanceTile
       * 
       */
 
-
-     [Header("使用しているモニターがRetinaモニターの場合trueにしてください"), SerializeField] 
-    private static bool _Monitor_is_Retina = true;
-
     [Header("画面拡大率"), SerializeField]
     public static float WindowZoomPercent = GetDpi();
-
 
     // 生成したタイルの親オブジェクト
     private static GameObject MapParent;
@@ -32,13 +28,11 @@ public static class ClickInstanceTile
     // マップ配列、タイルが存在するところはnotnull,タイルが存在しないところはnull
     public static GameObject[,] ExistMap { get; set; } = new GameObject[100, 100];
 
+    // 存在しているタイルを格納するGameObject配列
     private static GameObject[] Tiles;
 
     // 多重に置くことを防ぐ為にある。　前フレームのマウス位置を設定するVector3変数
     private static Vector3 BeforeMousePosition;
-
-
-
 
     static ClickInstanceTile()
     {
@@ -47,24 +41,6 @@ public static class ClickInstanceTile
 
         //シーンビュー上のイベントを取得するため、メソッドを設定
         SceneView.duringSceneGui += EventOnSceneView;
-    }
-
-
-
-    /// <summary>
-    /// DPIを取得するメソッド
-    /// </summary>
-    public static float GetDpi()
-    {
-        // dpi変数
-        float dpi;
-
-        dpi = Screen.dpi;
-
-        Debug.Log("拡大率は" + (dpi / 96) * 100 + "%です！");
-
-        return dpi / 96;
-
     }
 
 
@@ -92,16 +68,37 @@ public static class ClickInstanceTile
         WindowZoomPercent = GetDpi();
 
 
-        // タイルモードの状態で、クリックするとタイルを生成。
+        // タイルモードの状態で、クリック、ドラッグするとタイルを生成。
         // 入力処理
-        if (CreateTileEditor._tileMode && (Event.current.type == EventType.Used))
+        if (CreateTileEditor._tileMode && Event.current.type == EventType.Used)
         {
             // プレハブの生成
             InstancePrefab();
         }
 
-        // ゴーストは表示する。
-        OnGUIGhostTile();
+        // 右クリックで削除
+        if(CreateTileEditor._tileMode && Event.current.button == 1)
+        {
+            DeletePrefab();
+        }
+    }
+
+
+
+    /// <summary>
+    /// DPI拡大率を取得するメソッド
+    /// </summary>
+    public static float GetDpi()
+    {
+        // dpiを設定する。
+        float loc_dpi = Screen.dpi;
+
+        // Windows標準のDPI値
+        const int loc_defaultWindowsDpi = 96;
+
+        // 標準のDPI値を基準にした倍率を返す。
+        return loc_dpi / loc_defaultWindowsDpi;
+
     }
 
 
@@ -114,14 +111,7 @@ public static class ClickInstanceTile
         
 
         // イベントからマウスの位置取得
-        Vector3 mousePosition = GetMousePosition();
-
-        // シーン上の座標に変換後、グリッド座標に正規化
-        mousePosition = new Vector3(
-                                    Mathf.Round(mousePosition.x),
-                                    Mathf.Round(mousePosition.y),
-                                    Mathf.Round(mousePosition.z)
-                                    );
+        Vector3 mousePosition = GetMousePosition(true);
 
         // 前フレームとマウス位置が同じなら
         if (mousePosition == BeforeMousePosition) return;
@@ -129,12 +119,8 @@ public static class ClickInstanceTile
         // タイルが被っているか確認
         if (_isExistTile(mousePosition))
         {
-
-            int x = (int)mousePosition.x;
-            int y = (int)mousePosition.y;
-
-            // 被っているオブジェクトを破棄して、内部のUndoリストに記録
-            Undo.DestroyObjectImmediate(ExistMap[x, y]);
+            // 被っているタイルを破棄する
+            DeletePrefab();
         }
 
 
@@ -146,8 +132,7 @@ public static class ClickInstanceTile
             // 生成したオブジェクトを子オブジェクトに設定
             tile.transform.parent = MapParent.transform;
 
-            // 生成したオブジェクトを選択済みの状態にする。 
-            //Selection.activeGameObject = tile;
+            // 生成したオブジェクトを選択nullの状態にする。 
             Selection.activeGameObject = null;
 
             // 生成したオブジェクトをマウス位置に移動させる。
@@ -162,15 +147,35 @@ public static class ClickInstanceTile
         SettingExistTileArray();
 
         BeforeMousePosition = mousePosition;
+
     }
 
 
 
     /// <summary>
+    /// プレハブの削除メソッド
+    /// </summary>
+    private static void DeletePrefab()
+    {
+        // イベントからマウスの位置取得
+        Vector3 mousePosition = GetMousePosition(true);
+
+        int x = (int)mousePosition.x;
+        int y = (int)mousePosition.y;
+
+        // 被っているオブジェクトを破棄して、内部のUndoリストに記録
+        try
+        {
+            Undo.DestroyObjectImmediate(ExistMap[x, y]);
+        }
+        catch { }
+    }
+
+    /// <summary>
     /// マウスポジションの取得
     /// </summary>
     /// <returns>シーン上のマウス座標</returns>
-    private static Vector3 GetMousePosition()
+    public static Vector3 GetMousePosition(bool _Round = false)
     {
         /*
          * 
@@ -188,19 +193,11 @@ public static class ClickInstanceTile
         // イベントからマウスの位置取得
         Vector3 mousePosition = Event.current.mousePosition;
 
+        // 拡大率分乗算する
+        mousePosition.x *= WindowZoomPercent;
 
-
-        // 使用者のモニターがRetinaモニターの場合
-        if (_Monitor_is_Retina)
-        {
-            mousePosition.x *= WindowZoomPercent;
-            mousePosition.y = SceneView.currentDrawingSceneView.camera.pixelHeight - mousePosition.y * WindowZoomPercent;
-        }
-        // 使用者のモニターがRetinaモニターでない場合
-        else
-        {
-            mousePosition.y = SceneView.currentDrawingSceneView.camera.pixelHeight - mousePosition.y;
-        }
+        // 拡大率分乗算する
+        mousePosition.y = SceneView.currentDrawingSceneView.camera.pixelHeight - mousePosition.y * WindowZoomPercent;
 
         // マウスの位置をシーン上の座標に変換
         mousePosition = SceneView.currentDrawingSceneView.camera.ScreenToWorldPoint(mousePosition);
@@ -208,6 +205,17 @@ public static class ClickInstanceTile
         // 奥行を排除
         mousePosition.z = 0;
 
+        if (_Round)
+        {
+            // シーン上の座標に変換後、グリッド座標に正規化
+            mousePosition = new Vector3(
+                                        Mathf.Round(mousePosition.x),
+                                        Mathf.Round(mousePosition.y),
+                                        Mathf.Round(mousePosition.z)
+                                        );
+        }
+
+        // 返却値として返す
         return mousePosition;
     }
 
@@ -229,21 +237,21 @@ public static class ClickInstanceTile
         // Tileタグがついたオブジェクトを取得
         Tiles = GameObject.FindGameObjectsWithTag("Tile");
 
-        // 一回すべてをnullにする
+        // for文で配列を回す
         for(int i = 0; i < ExistMap.GetLength(0); i++)
         {
             for(int j = 0; j < ExistMap.GetLength(1); j++)
             {
+                // 要素数をnullにする
                 ExistMap[i, j] = null;
             }
         }
         // タイルの座標の場所にタイルを設定
         for (int i = 0; i < Tiles.Length; i++)
         {
-            int x = 0;
-            int y = 0;
-            x = (int)Tiles[i].gameObject.transform.position.x;
-            y = (int)Tiles[i].gameObject.transform.position.y;
+            // 座標のx座標とy座標を丸めてそれぞれ格納
+            int x = (int)Tiles[i].gameObject.transform.position.x;
+            int y = (int)Tiles[i].gameObject.transform.position.y;
 
             try
             {
@@ -278,62 +286,5 @@ public static class ClickInstanceTile
         }
 
     }
-
-
-
-    //########################################
-    private static void OnGUIGhostTile()
-    {
-        // イベントからマウスの位置取得
-        Vector3 mousePosition = GetMousePosition();
-
-        //Debug.Log(mousePosition +")"+Screen.width+":"+Screen.height);
-    }
-
-
-
-    
-//#endif
-}
-
-
-
-/// <summary>
-/// ClickInstanceTileスクリプトのパラメータをウィンドウにパラメータ化するクラス
-/// </summary>
-public sealed class ClickInstanceTileWindow : EditorWindow
-{
-    [UnityEditor.MenuItem("Window/Sasaki/ClickInstanceTileWindow")]
-    private static void ShowParamWindow()
-    {
-        // Windowを表示
-        GetWindow<ClickInstanceTileWindow>().Show();
-    }
-
-
-    // ここが初期値になる
-    public float WindowZoomPercent { get; set; } = ClickInstanceTile.WindowZoomPercent;
-
-    public static bool foldout = false;
-
-    
-
-    private void OnGUI()
-    {
-        EditorGUILayout.LabelField("ウィンドウ設定");
-
-        WindowZoomPercent = EditorGUILayout.FloatField(WindowZoomPercent, "拡大率");
-
-        EditorGUILayout.Space();
-
-        // 値を表示
-        //WindowZoomPercent = EditorGUILayout.FloatField("Windowsのウィンドウ拡大率", WindowZoomPercent);
-
-
-        foldout = EditorGUILayout.Foldout(foldout, "ドロップアウト");
-        if (foldout)
-        {
-            EditorGUILayout.LabelField("こんにちは");
-        }
-    }
+    //#endif
 }

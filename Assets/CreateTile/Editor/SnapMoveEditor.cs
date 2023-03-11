@@ -28,30 +28,45 @@ public class SnapMoveEditor : Editor
     /// <summary>
     /// OnSceneGUI
     /// </summary>
-    [System.Obsolete]
     private void OnSceneGUI()
     {
         // 基本ツールの使用を規制する。
         Tools.current = Tool.None;
 
-        // 
+        // オブジェクトの中心座標をもとめて設定する。
         Center = GetCenterOfInstances(instances);
 
         //円形ハンドルの描画
         FreeHandle();
+
     }
 
 
 
-    [System.Obsolete]
     private void FreeHandle()
     {
         //円形の描画
         Handles.color = Color.magenta;
 
         EditorGUI.BeginChangeCheck();
-        var pos = Handles.FreeMoveHandle(Center, Quaternion.identity, FreeHandleRadius, Vector3.one,
-            Handles.CircleHandleCap);
+
+        // フリーハンドルを生成　(非推奨らしい。変わりが見つからない...)
+        Vector3 pos = Handles.FreeMoveHandle(
+                                             // 中心位置に生成
+                                             Center, 
+
+                                             // 回転させないで生成
+                                             Quaternion.identity, 
+
+                                             // フリーハンドルの半径
+                                             FreeHandleRadius, 
+
+                                             // 
+                                             Vector3.one,
+
+                                             // サークルハンドルを描画
+                                             Handles.CircleHandleCap
+                                            );
 
         
         if (EditorGUI.EndChangeCheck())
@@ -61,7 +76,7 @@ public class SnapMoveEditor : Editor
     }
 
     /// <summary>
-    /// �����̃C���X�^���X�̒��S��Ԃ�
+    /// 中心位置を求めるメソッド
     /// </summary>
     /// <param name="instances"></param>
     /// <returns></returns>
@@ -88,7 +103,7 @@ public class SnapMoveEditor : Editor
     /// <param name="vec3"></param>
     private void MoveObject(Vector3 vec3)
     {
-        // 移動量を丸める
+        // 移動量を丸める(Mathf重いから改善したい)
         Vector2Int RoundVector2 = new Vector2Int(Mathf.RoundToInt(vec3.x/GridSize),Mathf.RoundToInt(vec3.y / GridSize));
 
         // 移動量が無い場合returnする

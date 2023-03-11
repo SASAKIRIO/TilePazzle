@@ -10,27 +10,19 @@ using UnityEngine;
 public static class CreateTileEditor
 {
 
-//#if UNITY_EDITOR
-    // タイルの色のenum変数
-    public enum Status
-    {
-        None,
-        White,
-        Black,
-        Green,
-        Pink,
-        Red,
-        Yellow,
-        Blue,
-        Orange,
-        Purple,
-    }
+    //#if UNITY_EDITOR
 
-    // 現在ボタンで選択している色を保存する変数
-    public static Status _status = Status.None;
+    // 指定したタイル名を設定する変数
+    public static string _selectTileName = default;
 
-    // 指定したタイルを格納する変数
+    // 指定したタイルを設定する変数
     public static GameObject _selectedTile = default;
+
+    // 指定したタイルのstring型tipsを設定する変数
+    public static string _tipsString = default;
+
+    // 指定したタイルのTexture型tipsを設定する変数
+    public static Texture _tipsTexture = default;
 
     // タイルデータが格納されているスクリプタブルオブジェクトを格納
     private static TileDataTable _tileDataTable;
@@ -38,13 +30,15 @@ public static class CreateTileEditor
     // タイル編集モードが否かを判定するbool変数
     public static bool _tileMode = false;
 
-    public static string TileDataTablePath {get;set;} = "Assets/CreateTile/Data/TileDataTable.asset";
+    public static string _tileDataTablePath {get;set;} = "Assets/CreateTile/Data/TileDataTable.asset";
 
     // ボタンの多きさ
-    static float loc_buttonSize = 60;
+    private static float _buttonSize = CreateTileEditorWindow._buttonSize;
 
     // ボタンとボタンの間隔(px)
-    static float loc_padding = 2;
+    private static float _padding = CreateTileEditorWindow._padding;
+
+    private static Rect _tileModeButtonRect = CreateTileEditorWindow._tileModeButtonRect;
 
     /// <summary>
     /// コンストラクターメソッド　SceneGUIにOnGUIメソッドを加算（重ねる）
@@ -65,10 +59,6 @@ public static class CreateTileEditor
     {
         ParamUpdate();
 
-        // タイルモードの切り替えをするボタンの大きさを設定するfloatローカル変数
-        float loc_switchButtonSizeX = 80;
-        float loc_switchButtonSizeY = 60;
-
         /*
          * タイルモードのON、OFFができるボタンを表示する拡張
          */
@@ -79,11 +69,8 @@ public static class CreateTileEditor
             // ボタン描画の開始
             Handles.BeginGUI();
 
-            // ボタン位置をRect変数に設定
-            Rect rect = new Rect(8, 300, loc_switchButtonSizeX, loc_switchButtonSizeY);
-
             // ボタンの挙動、押したらTileモードがONになる
-            if (GUI.Button(rect, "TileモードOFF"))
+            if (GUI.Button(_tileModeButtonRect, "TileモードOFF"))
             {
                 _tileMode = true;
             }
@@ -97,11 +84,8 @@ public static class CreateTileEditor
             // ボタン描画の開始
             Handles.BeginGUI();
 
-            // ボタン位置をRect変数に設定
-            Rect rect = new Rect(8, 300, loc_switchButtonSizeX, loc_switchButtonSizeY);
-
             // ボタンの挙動、押したらTileモードがOFFになる
-            if (GUI.Button(rect, "TileモードON"))
+            if (GUI.Button(_tileModeButtonRect, "TileモードON"))
             {
                 _tileMode = false;
             }
@@ -128,11 +112,18 @@ public static class CreateTileEditor
         Handles.EndGUI();
     }
 
+
+
+
+    /// <summary>
+    /// CreateTileEditorWindowから値を更新
+    /// </summary>
     private static void ParamUpdate()
     {
-        loc_buttonSize = CreateTileEditorWindow._buttonSize;
-        loc_padding = CreateTileEditorWindow._padding;
-        TileDataTablePath = CreateTileEditorWindow._tileDataTablePath;
+        _buttonSize = CreateTileEditorWindow._buttonSize;
+        _padding = CreateTileEditorWindow._padding;
+        _tileDataTablePath = CreateTileEditorWindow._tileDataTablePath;
+        _tileModeButtonRect = CreateTileEditorWindow._tileModeButtonRect;
     }
 
     /// <summary>
@@ -142,7 +133,7 @@ public static class CreateTileEditor
     private static TileDataTable LoadDataTable()
     {
         // 指定したパスにあるScriptableObjectからデータを引っ張る。
-        return AssetDatabase.LoadAssetAtPath<TileDataTable>(TileDataTablePath);
+        return AssetDatabase.LoadAssetAtPath<TileDataTable>(_tileDataTablePath);
     }
 
 
@@ -163,7 +154,9 @@ public static class CreateTileEditor
 
             /*[   ボタン位置、（選べる用にする）   ]*/
 
-            //// ボタン位置
+
+
+            //// ボタン位置(マイクラ)
             //Rect loc_rect = new Rect(
             //                        // x
             //                        sceneSize.x / 2 - loc_buttonSize * loc_count / 2 + loc_buttonSize * i + loc_padding * i,
@@ -174,20 +167,26 @@ public static class CreateTileEditor
             //                         // height 縦サイズ
             //                         loc_buttonSize);
 
+
+
             //// ボタン位置(右上配置)
             Rect loc_rect = new Rect(
 
                                      // x（マージン）
-                                     sceneSize.x - loc_buttonSize * 2,
+                                     sceneSize.x - _buttonSize * 2,
                                      // y
                                      //sceneSize.y / 2 - loc_buttonSize * loc_count / 2 + loc_buttonSize * i + loc_padding * i,
-                                     loc_buttonSize * i + loc_padding * i,
+                                     _buttonSize * i + _padding * i,
                                      // width 横サイズ
-                                     loc_buttonSize,
+                                     _buttonSize,
                                      // height 縦サイズ
-                                     loc_buttonSize
+                                     _buttonSize
 
                                     );
+
+
+
+
 
 
             /*[   /ボタン位置、（選べる用にする）   ]*/
@@ -195,73 +194,11 @@ public static class CreateTileEditor
             // ボタンを押したとき。
             if (GUI.Button(loc_rect, _tileData.icon.texture))
             {
-                // 位置によって処理を変える。
-                switch (i + 1)
-                {
-                    case (int)Status.White:
-
-                        // 選択している色を白にする。
-                        _status = Status.White;
-                        break;
-
-                    case (int)Status.Black:
-
-                        // 選択している色を黒にする。
-                        _status = Status.Black;
-                        break;
-
-                    case (int)Status.Green:
-
-                        // 選択している色を緑にする。
-                        _status = Status.Green;
-                        break;
-
-                    case (int)Status.Pink:
-
-                        // 選択している色をピンクにする。
-                        _status = Status.Pink;
-                        break;
-
-                    case (int)Status.Red:
-
-                        // 選択している色を赤にする。
-                        _status = Status.Red;
-                        break;
-
-                    case (int)Status.Yellow:
-
-                        // 選択している色を黄色にする。
-                        _status = Status.Yellow;
-                        break;
-
-                    case (int)Status.Blue:
-
-                        // 選択している色を青にする。
-                        _status = Status.Blue;
-                        break;
-
-                    case (int)Status.Orange:
-
-                        // 選択している色をオレンジにする。
-                        _status = Status.Orange;
-                        break;
-
-                    case (int)Status.Purple:
-
-                        // 選択している色を紫にする。
-                        _status = Status.Purple;
-                        break;
-
-                    default:
-
-                        // 選択している色を無しにする。
-                        _status = Status.None;
-                        break;
-
-                }
-
                 // 指定タイルを格納
+                _selectTileName = _tileData.Name;
                 _selectedTile = _tileData.gameObject;
+                _tipsString = _tileData.tipsString;
+                _tipsTexture = _tileData.tipsTexture;
 
                 // タイル生成はClickスクリプトで生成。
             }
@@ -272,6 +209,9 @@ public static class CreateTileEditor
 
 
 
+/// <summary>
+/// ボタンの設定ウィンドウ。
+/// </summary>
 public sealed class CreateTileEditorWindow : EditorWindow
 {
     [MenuItem("Window/Sasaki/CreateTileEditorWindow")]
@@ -282,35 +222,75 @@ public sealed class CreateTileEditorWindow : EditorWindow
     }
 
     // ボタンの多きさ
-    public static float _buttonSize { get; set; } = 40;
+    //public static float _buttonSize { get; set; } = 40;
+    public static float _buttonSize;
 
     // ボタンの間隔 (px)
-    public static float _padding { get; set; } = 2;
+    //public static float _padding { get; set; } = 2;
+    public static float _padding;
 
     // タイル情報が入っているスクリプタブルオブジェクトのパス
     public static string _tileDataTablePath { get; set; } = "Assets/CreateTile/Data/TileDataTable.asset";
+
+    // Rect座標
+    public static Rect _tileModeButtonRect;
+    
 
     public enum Language
     {
         Japanese,
         English,
-        Chinese,
     }
 
-    Language language = Language.Japanese;
+    Language _language = Language.Japanese;
+
+
+
+    /// <summary>
+    /// Prefsに保存してた値を格納する。
+    /// </summary>
+    private void OnEnable()
+    {
+        // ボタンの大きさのPrefs保存
+        _buttonSize = EditorPrefs.GetFloat(nameof(_buttonSize), _buttonSize);
+
+        // ボタン間隔のPrefs保存
+        _padding = EditorPrefs.GetFloat(nameof(_padding), _padding);
+
+
+        _tileModeButtonRect.x = EditorPrefs.GetFloat(nameof(_tileModeButtonRect) + "_x", _tileModeButtonRect.x);
+        _tileModeButtonRect.y = EditorPrefs.GetFloat(nameof(_tileModeButtonRect) + "_y", _tileModeButtonRect.y);
+        _tileModeButtonRect.width = EditorPrefs.GetFloat(nameof(_tileModeButtonRect) + "_w", _tileModeButtonRect.width);
+        _tileModeButtonRect.height = EditorPrefs.GetFloat(nameof(_tileModeButtonRect) + "_h", _tileModeButtonRect.height);
+    }
+
+
 
     private void OnGUI()
     {　
         // 言語設定
-        language = (Language)EditorGUILayout.EnumPopup("Language", language);
+        _language = (Language)EditorGUILayout.EnumPopup("Language", _language);
         
         EditorGUILayout.Space();
-        
+
+        EditorGUI.BeginChangeCheck();
+
+        // リッチテキストを許可するためのGUIStyle変数
+        GUIStyle style = new GUIStyle(EditorStyles.label);
+        style.richText = true;
+
         // 言語によって表示を変える。
-        switch (language)
+        switch (_language)
         {
             case Language.Japanese:
-                EditorGUILayout.LabelField("ボタン設定");
+
+                EditorGUILayout.LabelField("<size=20><b>CreateTileEditorへようこそ</b></size>", style);
+
+                EditorGUILayout.Space();
+
+                EditorGUILayout.Space();
+
+                EditorGUILayout.LabelField("ボタン設定",EditorStyles.boldLabel);
 
                 EditorGUILayout.Space();
 
@@ -319,6 +299,7 @@ public sealed class CreateTileEditorWindow : EditorWindow
 
                 EditorGUILayout.Space();
 
+                _tileModeButtonRect = EditorGUILayout.RectField("モードスイッチボタンのRect位置",_tileModeButtonRect);
 
                 EditorGUILayout.Space();
 
@@ -328,7 +309,14 @@ public sealed class CreateTileEditorWindow : EditorWindow
                 break;
 
             case Language.English:
-                EditorGUILayout.LabelField("Button Settings");
+
+                EditorGUILayout.LabelField("<size=20><b>Welcome to CreateTileEditor</b></size>",style);
+
+                EditorGUILayout.Space();
+
+                EditorGUILayout.Space();
+
+                EditorGUILayout.LabelField("Button Settings", EditorStyles.boldLabel);
 
                 EditorGUILayout.Space();
 
@@ -337,10 +325,26 @@ public sealed class CreateTileEditorWindow : EditorWindow
 
                 EditorGUILayout.Space();
 
+                _tileModeButtonRect = EditorGUILayout.RectField("Rect position to ModeSwitchButton", _tileModeButtonRect);
+
+                EditorGUILayout.Space();
+
                 EditorGUILayout.LabelField("Tile information Path");
                 _tileDataTablePath = EditorGUILayout.TextField("", _tileDataTablePath);
 
                 break;
+        }
+
+        if (EditorGUI.EndChangeCheck())
+        {
+            EditorPrefs.SetFloat(nameof(_buttonSize), _buttonSize);
+            EditorPrefs.SetFloat(nameof(_padding), _padding);
+
+            EditorPrefs.SetFloat(nameof(_tileModeButtonRect) + "_x", _tileModeButtonRect.x);
+            EditorPrefs.SetFloat(nameof(_tileModeButtonRect) + "_y", _tileModeButtonRect.y);
+            EditorPrefs.SetFloat(nameof(_tileModeButtonRect) + "_w", _tileModeButtonRect.width);
+            EditorPrefs.SetFloat(nameof(_tileModeButtonRect) + "_h", _tileModeButtonRect.height);
+
         }
     }
 }
