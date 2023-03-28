@@ -234,7 +234,6 @@ public sealed class CreateTileEditorWindow : EditorWindow
 
     // Rectç¿ïW
     public static Rect _tileModeButtonRect;
-    
 
     public enum Language
     {
@@ -262,6 +261,9 @@ public sealed class CreateTileEditorWindow : EditorWindow
         _tileModeButtonRect.y = EditorPrefs.GetFloat(nameof(_tileModeButtonRect) + "_y", _tileModeButtonRect.y);
         _tileModeButtonRect.width = EditorPrefs.GetFloat(nameof(_tileModeButtonRect) + "_w", _tileModeButtonRect.width);
         _tileModeButtonRect.height = EditorPrefs.GetFloat(nameof(_tileModeButtonRect) + "_h", _tileModeButtonRect.height);
+
+        _tileDataTablePath = EditorPrefs.GetString(nameof(_tileDataTablePath), _tileDataTablePath);
+
     }
 
 
@@ -345,6 +347,7 @@ public sealed class CreateTileEditorWindow : EditorWindow
             EditorPrefs.SetFloat(nameof(_tileModeButtonRect) + "_w", _tileModeButtonRect.width);
             EditorPrefs.SetFloat(nameof(_tileModeButtonRect) + "_h", _tileModeButtonRect.height);
 
+            EditorPrefs.SetString(nameof(_tileDataTablePath), _tileDataTablePath);
         }
     }
 }

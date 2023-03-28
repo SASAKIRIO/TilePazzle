@@ -10,20 +10,26 @@ using UnityEditor;
 /// タイルを選択した時にそれは何のタイルかを表示してくれるEditor
 /// </summary>
 [InitializeOnLoad]
-public class SelectedColorTellEditor
+public class SelectedColorTellEditor : MonoBehaviour
 {
     private static GameObject _labelObject;
     private static string _tagName = "Label";
 
+    [System.Obsolete]
     static SelectedColorTellEditor()
     {
-        // Tagが付いてるオブジェクトを取得
+        //// Tagが付いてるオブジェクトを取得
+        //try
+        //{
+        //    _labelObject = GameObject.FindGameObjectWithTag(_tagName);
+        //}
+        //catch { }
+
         _labelObject = GameObject.FindGameObjectWithTag(_tagName);
 
         //シーンビュー上のイベントを取得するため、メソッドを設定
         SceneView.duringSceneGui += EventOnSceneView;
     }
-
 
     /// <summary>
     /// SceneView上でイベントが発生した時に呼ばれる関数
@@ -32,11 +38,11 @@ public class SelectedColorTellEditor
     private static void EventOnSceneView(SceneView scene)
     {
         // タイルモードでないときreturn
-        if (!CreateTileEditor._tileMode) return;
+        if (!CreateTileEditor._tileMode || _labelObject==null) return;
 
         // マウス座標にラベルオブジェクトを移動
         _labelObject.transform.position = ClickInstanceTile.GetMousePosition();
-
+        
         // リッチテキストを許可するためのGUIStyle変数
         GUIStyle style = new GUIStyle(EditorStyles.label);
         style.richText = true;
@@ -45,6 +51,8 @@ public class SelectedColorTellEditor
         Handles.Label(_labelObject.transform.position + Vector3.up, CreateTileEditor._tipsString, style);
 
         // TipsTextureを表示
-        Handles.Label(_labelObject.transform.position+Vector3.up, CreateTileEditor._tipsTexture);
+        Handles.Label(_labelObject.transform.position + Vector3.up, CreateTileEditor._tipsTexture);
     }
+
+
 }

@@ -28,6 +28,7 @@ public class SnapMoveEditor : Editor
     /// <summary>
     /// OnSceneGUI
     /// </summary>
+    [System.Obsolete]
     private void OnSceneGUI()
     {
         // 基本ツールの使用を規制する。
@@ -42,7 +43,7 @@ public class SnapMoveEditor : Editor
     }
 
 
-
+    [System.Obsolete]
     private void FreeHandle()
     {
         //円形の描画
@@ -109,7 +110,7 @@ public class SnapMoveEditor : Editor
         // 移動量が無い場合returnする
         if (RoundVector2 == Vector2.zero) return;
 
-        foreach(var ins in instances)
+        foreach(SnapMove ins in instances)
         {
             Object[] objects = { ins, ins.transform };
             Undo.RecordObjects(objects, "オブジェクトの移動");

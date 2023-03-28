@@ -22,9 +22,6 @@ public static class ClickInstanceTile
     [Header("画面拡大率"), SerializeField]
     public static float WindowZoomPercent = GetDpi();
 
-    // 生成したタイルの親オブジェクト
-    private static GameObject MapParent;
-
     // マップ配列、タイルが存在するところはnotnull,タイルが存在しないところはnull
     public static GameObject[,] ExistMap { get; set; } = new GameObject[100, 100];
 
@@ -36,9 +33,6 @@ public static class ClickInstanceTile
 
     static ClickInstanceTile()
     {
-        // 生成したタイルをまとめる親オブジェクトを設定
-        MapParent = GameObject.FindGameObjectWithTag("MapParent");
-
         //シーンビュー上のイベントを取得するため、メソッドを設定
         SceneView.duringSceneGui += EventOnSceneView;
     }
@@ -129,9 +123,6 @@ public static class ClickInstanceTile
             // ScriptableObjectで設定したPrefabを出して、tileに設定
             GameObject tile = (GameObject)PrefabUtility.InstantiatePrefab(CreateTileEditor._selectedTile);
 
-            // 生成したオブジェクトを子オブジェクトに設定
-            tile.transform.parent = MapParent.transform;
-
             // 生成したオブジェクトを選択nullの状態にする。 
             Selection.activeGameObject = null;
 
@@ -146,6 +137,7 @@ public static class ClickInstanceTile
         // タイルが存在しているかいないかを判断する配列を設定
         SettingExistTileArray();
 
+        // 前フレームのマウス位置を格納
         BeforeMousePosition = mousePosition;
 
     }
